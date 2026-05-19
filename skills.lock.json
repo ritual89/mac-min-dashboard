@@ -1,0 +1,12 @@
+{
+  "upstream": "alirezarezvani/claude-skills",
+  "upstreamVersion": "v2.8.0",
+  "installer": "agent-skills-cli",
+  "bundles": [
+    "engineering-team",
+    "engineering"
+  ],
+  "cursorPath": ".cursor/skills",
+  "skillCount": 129,
+  "installScript": "scripts/install-skills.sh"
+}
