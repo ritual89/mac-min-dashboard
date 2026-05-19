@@ -1,7 +1,7 @@
 {
   "upstream": "alirezarezvani/claude-skills",
   "upstreamVersion": "v2.8.0",
-  "installer": "agent-skills-cli",
+  "installer": "scripts/install-skills.sh (git clone + copy)",
   "bundles": [
     "engineering-team",
     "engineering"
