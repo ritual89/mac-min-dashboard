@@ -37,10 +37,12 @@ Optional: `cd apps/web && npm run dev` with API on 8081.
 
 ### On the Mac Mini hub (real deploy)
 
-1. Clone/sync repo **on the Mac Mini**.
-2. `uv sync --all-packages --dev`, edit `config/config.yaml`, `npm run build`.
-3. **Production:** `./scripts/install-launchd.sh` — or manual: `uv run mac-mini-worker` + `uv run python -m mac_mini_api.main`.
+1. **Commit and push** from dev machine (cathedral); **git pull** on the Mac Mini.
+2. Edit `config/config.yaml` on the hub (SSH aliases, fleet hosts).
+3. **One command on the hub:** `./scripts/deploy-hub.sh` — syncs deps, checks SSH+Docker on each host, builds UI, installs launchd. Use `--install-docker` on macOS hosts missing Docker (Colima via Homebrew over SSH).
 4. From laptop on Tailscale: `http://<mac-mini-hostname>:8081`.
+
+Details: [`deploy/README.md`](deploy/README.md).
 
 ## Progress (v0.1 scaffold)
 
@@ -99,6 +101,38 @@ One-shot worker smoke (no long loop):
 uv run python -c "from mac_mini_worker.main import run_worker; run_worker(max_ticks=1)"
 ```
 
+### SSH config must match what works in your terminal
+
+If `ssh mac-mini` works but the worker shows `Permission denied (publickey)`, the dashboard was probably using the wrong **user** or **key**. Interactive SSH uses `~/.ssh/config`; the worker used explicit `ssh -i … user@host`, and `user@host` overrides the config `User` line.
+
+**Discover values** (same machine you run the worker from):
+
+```bash
+ssh -G mac-mini | egrep '^(user|hostname|identityfile) '
+```
+
+**Recommended** in `config/config.yaml`: set `ssh_host` to your config `Host` name (e.g. `mac-mini`) so the worker runs `ssh mac-mini '…'` — same as your shell. Keep `ssh_user` / `ssh_key_path` for the DB; they are ignored when `ssh_host` is set.
+
+**Alternative** (no `ssh_host`): set `ssh_user` and `ssh_key_path` to match `ssh -G`, and use `tailscale_host` as the hostname (not necessarily the config alias).
+
+### Docker over SSH (macOS / Homebrew)
+
+Docker is **not** installed per-project. The worker only needs the SSH user in `config.yaml` to run `docker ps` on that host (Colima, Docker Desktop, compose stacks, etc. are all fine).
+
+If SSH works but you see `command not found: docker`, Docker is often already installed under Homebrew (`/opt/homebrew/bin/docker`) while **non-interactive SSH** uses a minimal `PATH` (`/usr/bin:/bin`) that omits Homebrew. That is not a missing engine and you usually should **not** run `./scripts/deploy-hub.sh --install-docker` on a host that already has Colima or Desktop.
+
+The worker and [`scripts/preflight_fleet.py`](scripts/preflight_fleet.py) prepend `/opt/homebrew/bin` and `/usr/local/bin` on macOS hosts before allowlisted `docker` commands.
+
+**Verify** (same paths as production — from the machine that runs the worker):
+
+```bash
+ssh -G mac-mini | egrep '^(user|hostname|identityfile) '
+uv run python scripts/preflight_fleet.py
+uv run python -c "from mac_mini_worker.main import run_worker; run_worker(max_ticks=1)"
+```
+
+If preflight still fails, test with the full CLI path on the host: `ssh mac-mini '/opt/homebrew/bin/docker ps'`. Optional fix on the server: add Homebrew to `~/.zshenv` for the SSH user so any non-interactive session sees `docker`.
+
 Dev UI with hot reload (API must still be running on :8081):
 
 ```bash
@@ -107,21 +141,17 @@ cd apps/web && npm run dev
 
 ### Mac Mini hub (launchd, always-on)
 
-After `uv sync`, config, and `npm run build`:
-
 ```bash
-./scripts/install-launchd.sh
+./scripts/deploy-hub.sh
 # API http://127.0.0.1:8081 — logs ~/Library/Logs/mac-mini-dashboard/
 # Remove: ./scripts/install-launchd.sh --uninstall
 ```
-
-Details: [`deploy/README.md`](deploy/README.md).
 
 ## Environment variables
 
 | Variable | Default | Used by |
 |----------|---------|---------|
-| `DASHBOARD_CONFIG_PATH` | `config/config.yaml` (optional for seed) | Worker, seed |
+| `DASHBOARD_CONFIG_PATH` | `config/config.yaml` (required for API logs) | Worker, API, seed |
 | `DASHBOARD_DB_PATH` | `./data/fleet.db` | API, worker, seed |
 | `DASHBOARD_PORT` | `8081` | API |
 | `DASHBOARD_STATIC_DIR` | `apps/web/dist` (if dir exists) | API |

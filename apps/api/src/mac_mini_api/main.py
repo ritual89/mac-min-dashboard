@@ -6,6 +6,8 @@ from pathlib import Path
 import uvicorn
 
 from mac_mini_api.app import create_app
+from mac_mini_core.config import AppConfig, load_config
+from mac_mini_core.ssh.subprocess import create_executor_factory
 from mac_mini_core.store import WorkloadStore
 
 
@@ -22,14 +24,29 @@ def _default_static_dir() -> Path | None:
     return dist if dist.is_dir() else None
 
 
+def _config_path() -> Path:
+    return Path(os.environ.get("DASHBOARD_CONFIG_PATH", "config/config.yaml"))
+
+
+def _default_config() -> AppConfig:
+    path = _config_path()
+    if not path.is_file():
+        msg = f"config not found: {path}"
+        raise FileNotFoundError(msg)
+    return load_config(path)
+
+
 def _default_store() -> WorkloadStore:
     db_path = os.environ.get("DASHBOARD_DB_PATH", "./data/fleet.db")
     return WorkloadStore.open(db_path)
 
 
 def create_production_app():
+    config = _default_config()
     return create_app(
         store=_default_store(),
+        config=config,
+        executor_factory=create_executor_factory(config),
         static_dir=_default_static_dir(),
     )
 

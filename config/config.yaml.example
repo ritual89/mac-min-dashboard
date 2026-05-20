@@ -2,7 +2,10 @@ hosts:
   - id: mac-mini
     display_name: Mac Mini Hub
     tailscale_host: mac-mini
-    ssh_user: gregorypeacock
+    # If `ssh mac-mini` works, set ssh_host to that ~/.ssh/config Host name (recommended).
+    # Discover user/key:  ssh -G mac-mini | egrep '^(user|identityfile) '
+    ssh_host: mac-mini
+    ssh_user: headlessroboto
     ssh_key_path: ~/.ssh/id_ed25519
     os: darwin
 

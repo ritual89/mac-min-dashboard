@@ -17,6 +17,7 @@ class HostConfig(BaseModel):
     ssh_key_path: str
     os: HostOS
     poll_interval_sec: int | None = None
+    ssh_host: str | None = None
 
     @field_validator("poll_interval_sec")
     @classmethod
