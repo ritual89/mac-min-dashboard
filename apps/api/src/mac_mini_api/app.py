@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from mac_mini_api.deps import ExecutorFactory, get_config, get_executor_factory, get_store
@@ -126,6 +126,18 @@ def create_app(
     def list_audit(store: WorkloadStore = Depends(get_store)) -> list[WorkloadOut]:
         rows = store.list_workloads(monitored=False)
         return [_workload_out(row) for row in rows]
+
+    if static_dir is None or not static_dir.is_dir():
+
+        @app.get("/", response_class=HTMLResponse)
+        def ui_not_built() -> str:
+            return (
+                "<h1>Mac Mini Dashboard API is running</h1>"
+                "<p>UI not built. From repo root:</p>"
+                "<pre>cd apps/web && npm ci && npm run build</pre>"
+                "<p>Then restart the API and reload this page.</p>"
+                "<p>API: <a href='/api/workloads?monitored=true'>/api/workloads</a></p>"
+            )
 
     if static_dir is not None and static_dir.is_dir():
         assets_dir = static_dir / "assets"

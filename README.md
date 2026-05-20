@@ -62,13 +62,14 @@ Not yet: Telegram alerts, audit/settings UI, restart/stop controls, Paramiko (su
 
 ```bash
 uv sync --all-packages --dev
-cd apps/web && npm install && npm run build
+cd apps/web && npm ci && npm run build
 
 export DASHBOARD_DB_PATH=./data/fleet.db
 uv run mac-mini-seed
 
 uv run python -m mac_mini_api.main
 # open http://127.0.0.1:8081 — fleet table shows fixture workloads (e.g. nginx)
+# If you see JSON {"detail":"Not Found"} at /, the UI was not built — rerun npm run build and restart the API
 ```
 
 Uses built-in demo host `mac-mini` and `packages/core/fixtures/docker/`. Optional: set `DASHBOARD_CONFIG_PATH` to seed against your `config.yaml` hosts (fixture map: `mac-mini` → `ps_standalone.jsonl`, `vultr-1` → `ps_compose.jsonl`).

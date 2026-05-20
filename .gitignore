@@ -16,5 +16,6 @@ vendor/claude-skills/
 __pycache__/
 *.py[cod]
 apps/web/coverage/
+*.tsbuildinfo
 config/config.yaml
 data/
