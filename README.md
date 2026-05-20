@@ -57,6 +57,7 @@ Shipped and covered by tests (100% branch coverage on Python packages; 100% on w
 | **Web UI** | Done | Fleet table by host, severity dots, logs modal |
 | **Demo seed** | Done | `mac-mini-seed` — populate DB from Docker fixtures (no SSH) |
 | **launchd (hub)** | Done | `scripts/install-launchd.sh` — API + worker LaunchAgents |
+| **Hub production (mac-mini)** | Done | `~/dev/mac-mini-dashboard` on hub; launchd API+worker; 3 Docker workloads monitored (2026-05-20) |
 | **Test coverage audit** | Done | 100% Python + web gates; `deploy/preflight` tested; CI includes worker cov; SQLite stores auto-closed in tests |
 
 Not yet: Telegram alerts, audit/settings UI, restart/stop controls, Paramiko (subprocess SSH only).
@@ -113,6 +114,8 @@ ssh -G mac-mini | egrep '^(user|hostname|identityfile) '
 ```
 
 **Recommended** in `config/config.yaml`: set `ssh_host` to your config `Host` name (e.g. `mac-mini`) so the worker runs `ssh mac-mini '…'` — same as your shell. Keep `ssh_user` / `ssh_key_path` for the DB; they are ignored when `ssh_host` is set.
+
+**Hub polls itself:** On the Mac Mini, `~/.ssh/config` needs a `Host mac-mini` entry (e.g. `HostName 127.0.0.1`, `IdentityFile ~/.ssh/id_ed25519`) and that public key in `~/.ssh/authorized_keys`. Cathedral’s key alone is not enough for loopback SSH from the worker.
 
 **Alternative** (no `ssh_host`): set `ssh_user` and `ssh_key_path` to match `ssh -G`, and use `tailscale_host` as the hostname (not necessarily the config alias).
 

@@ -40,7 +40,11 @@ if [[ "${SKIP_FLEET}" != "true" ]]; then
   if [[ "${INSTALL_DOCKER}" == "true" ]]; then
     PREFLIGHT_ARGS+=(--install-docker)
   fi
-  uv run python scripts/preflight_fleet.py "${PREFLIGHT_ARGS[@]}"
+  if [[ ${#PREFLIGHT_ARGS[@]} -gt 0 ]]; then
+    uv run python scripts/preflight_fleet.py "${PREFLIGHT_ARGS[@]}"
+  else
+    uv run python scripts/preflight_fleet.py
+  fi
 fi
 
 if [[ "${SKIP_WEB}" != "true" ]]; then

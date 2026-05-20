@@ -19,7 +19,13 @@ promote:
     - ~/dev
     - ~/projects
     - ~/code
+    - ~/ris
+    - ~/OpenViking
+    - ~/apps
   allowlist:
     - hermes
     - dashboard-for-life
+    - ris
+    - openviking
+    - bybit-rsync
   port_denylist: []

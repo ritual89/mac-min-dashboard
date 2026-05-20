@@ -5,7 +5,7 @@
 | **Service** | mac-mini-dashboard (API :8081 + worker) |
 | **Environment** | Mac Mini homelab hub (production) |
 | **Owner** | Solo / homelab |
-| **Last validated** | 2026-05-19 |
+| **Last validated** | 2026-05-20 |
 | **Repo** | https://github.com/ritual89/mac-mini-dashboard |
 
 ## Purpose
@@ -46,6 +46,8 @@ ssh -o BatchMode=yes mac-mini 'whoami; /opt/homebrew/bin/docker ps --format "{{.
 
 **Expected:** correct user (e.g. `headlessroboto`), container names listed.  
 **Do not** use `./scripts/deploy-hub.sh --install-docker` if Docker/Colima is already running.
+
+**Hub loopback (one-time):** The worker SSHs from the Mini to `ssh_host` (often `mac-mini`). On the hub itself, add `Host mac-mini` → `127.0.0.1` in `~/.ssh/config` and append `~/.ssh/id_ed25519.pub` to `~/.ssh/authorized_keys` if loopback `ssh mac-mini` fails with `Permission denied`.
 
 ---
 
