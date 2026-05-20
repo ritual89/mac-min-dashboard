@@ -12,4 +12,4 @@ def wrap_remote_command(command: str, os: HostOS) -> str:
         return f"{_DARWIN_PATH}{command}"
     if os is HostOS.LINUX:
         return f"{_LINUX_PATH}{command}"
-    return command
+    return command  # pragma: no cover — HostOS is darwin|linux only

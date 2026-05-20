@@ -17,6 +17,7 @@ All remote inspection and control flows through SSH using allowlisted command te
 - **FR-3:** Execution MUST honor a configurable timeout (default 30s).
 - **FR-4:** Transient failures MUST retry with exponential backoff (max 3 attempts).
 - **FR-5:** A `FakeSshExecutor` MUST exist for tests, recording invocations without network I/O.
+- **FR-6:** Non-interactive SSH MUST prepend an OS-appropriate `PATH` export before allowlisted commands (Homebrew on macOS, `/usr/local/bin` and `/snap/bin` on Linux).
 
 ## Allowlisted Commands
 
@@ -42,6 +43,7 @@ All remote inspection and control flows through SSH using allowlisted command te
 - **AC-2.4:** Given `FakeSshExecutor`, when execute called, then command is recorded and canned stdout returned.
 - **AC-2.5:** Given executor with retry policy, when first two attempts raise timeout and third succeeds, then result is returned and three attempts recorded.
 - **AC-2.6:** Given executor with retry policy, when all attempts fail, then `SshExecutionError` is raised.
+- **AC-2.7:** Given `wrap_remote_command` with Darwin or Linux `HostOS`, when called, then the rendered remote command prefixes the command with the matching `PATH` export and preserves the original command body.
 
 ## Edge Cases
 

@@ -19,7 +19,7 @@ jobs:
         run: uv sync --all-packages --dev
 
       - name: Run Python tests with coverage gate
-        run: uv run pytest --cov=mac_mini_core --cov=mac_mini_api --cov-branch --cov-report=term-missing
+        run: uv run pytest --cov=mac_mini_core --cov=mac_mini_api --cov=mac_mini_worker --cov-branch --cov-report=term-missing
 
       - uses: actions/setup-node@v4
         with:
