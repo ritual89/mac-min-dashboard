@@ -8,5 +8,10 @@
   ],
   "cursorPath": ".cursor/skills",
   "skillCount": 129,
-  "installScript": "scripts/install-skills.sh"
+  "installScript": "scripts/install-skills.sh",
+  "defaultPersona": "solo-founder",
+  "personaPaths": {
+    "rule": ".cursor/rules/solo-founder.mdc",
+    "agent": ".cursor/agents/solo-founder.md"
+  }
 }

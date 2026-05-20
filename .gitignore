@@ -1,3 +1,5 @@
+# Mutation testing (mutmut)
+mutants/
 .DS_Store
 .env
 .env.*
@@ -8,3 +10,11 @@ build/
 *.log
 .cursor/projects/
 vendor/claude-skills/
+.venv/
+.pytest_cache/
+.coverage
+__pycache__/
+*.py[cod]
+apps/web/coverage/
+config/config.yaml
+data/

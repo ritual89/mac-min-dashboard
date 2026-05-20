@@ -1,0 +1,15 @@
+---
+description: Update README.md when shipping a user-visible feature or runnable command
+alwaysApply: true
+---
+
+# README on ship
+
+When you complete a shippable slice (new command, service, API, UI, worker behavior, or env var):
+
+1. Update **Progress** in `README.md` — mark done or add a row; move items off "Not yet" when applicable.
+2. Add or adjust **Quick start**, **Environment variables**, and **API** tables if the slice affects them.
+3. Include exact copy-paste commands that were verified in this session.
+4. Update `specs/README.md` if a new spec was approved.
+
+Do not commit unless the user asks. Keep README edits minimal and factual — no marketing fluff.

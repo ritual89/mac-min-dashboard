@@ -1,0 +1,22 @@
+hosts:
+  - id: mac-mini
+    display_name: Mac Mini Hub
+    tailscale_host: mac-mini
+    ssh_user: gregorypeacock
+    ssh_key_path: ~/.ssh/id_ed25519
+    os: darwin
+
+default_poll_interval_sec: 30
+ssh_timeout_sec: 30
+restart_loop_threshold_1h: 5
+log_tail_lines: 200
+
+promote:
+  project_roots:
+    - ~/dev
+    - ~/projects
+    - ~/code
+  allowlist:
+    - hermes
+    - dashboard-for-life
+  port_denylist: []

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.macmin.dashboard.api</string>
+	<key>WorkingDirectory</key>
+	<string>{{REPO_ROOT}}</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>DASHBOARD_CONFIG_PATH</key>
+		<string>{{REPO_ROOT}}/config/config.yaml</string>
+		<key>DASHBOARD_DB_PATH</key>
+		<string>{{REPO_ROOT}}/data/fleet.db</string>
+		<key>DASHBOARD_PORT</key>
+		<string>8081</string>
+	</dict>
+	<key>ProgramArguments</key>
+	<array>
+		<string>{{PYTHON}}</string>
+		<string>-m</string>
+		<string>mac_mini_api.main</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>{{LOG_DIR}}/api.log</string>
+	<key>StandardErrorPath</key>
+	<string>{{LOG_DIR}}/api.err</string>
+</dict>
+</plist>

@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from mac_mini_core.config import load_config
+from mac_mini_core.store import WorkloadStore
+
+from mac_mini_worker.scheduler import WorkerScheduler
+from mac_mini_worker.ssh import create_executor_factory
+
+
+def _config_path() -> Path:
+    return Path(os.environ.get("DASHBOARD_CONFIG_PATH", "config/config.yaml"))
+
+
+def _db_path() -> str:
+    return os.environ.get("DASHBOARD_DB_PATH", "./data/fleet.db")
+
+
+def _audit_interval_sec() -> float:
+    return float(os.environ.get("DASHBOARD_AUDIT_INTERVAL_SEC", "300"))
+
+
+def build_scheduler() -> WorkerScheduler:
+    config = load_config(_config_path())
+    store = WorkloadStore.open(_db_path())
+    return WorkerScheduler(
+        config=config,
+        store=store,
+        executor_factory=create_executor_factory(config),
+        audit_interval_sec=_audit_interval_sec(),
+    )
+
+
+def run_worker(*, max_ticks: int | None = None) -> int:
+    scheduler = build_scheduler()
+    try:
+        return scheduler.run_forever(max_ticks=max_ticks)
+    finally:
+        store = getattr(scheduler, "store", None)
+        if store is not None:
+            store.close()
+
+
+def run() -> None:
+    run_worker()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    run()

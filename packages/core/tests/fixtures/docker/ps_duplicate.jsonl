@@ -1,0 +1,2 @@
+{"ID":"aaa","Names":"/dup","Image":"x:1","State":"running","Status":"Up 1 second","Labels":""}
+{"ID":"bbb","Names":"/dup","Image":"x:2","State":"exited","Status":"Exited (0) 1 second ago","Labels":""}

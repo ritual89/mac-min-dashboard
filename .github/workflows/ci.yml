@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --all-packages --dev
+
+      - name: Run Python tests with coverage gate
+        run: uv run pytest --cov=mac_mini_core --cov=mac_mini_api --cov-branch --cov-report=term-missing
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Run web tests with coverage gate
+        working-directory: apps/web
+        run: npm run test:coverage
+
+      # TODO: enable once mutmut maps tests to mutants (currently "no tests" for all)
+      # - name: Mutation testing (core)
+      #   run: uv run mutmut run --CI

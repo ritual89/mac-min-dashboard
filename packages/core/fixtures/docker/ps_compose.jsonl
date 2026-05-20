@@ -1,0 +1,1 @@
+{"ID":"def456","Names":"/myapp-api-1","Image":"myapp-api:latest","State":"running","Status":"Up 5 minutes (healthy)","Labels":"com.docker.compose.project=myapp,com.docker.compose.service=api,com.docker.compose.config-hash=abc"}

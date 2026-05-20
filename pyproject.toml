@@ -1,0 +1,60 @@
+[project]
+name = "mac-mini-dashboard"
+version = "0.1.0"
+description = "Tailnet-only fleet dashboard for Mac Mini homelab"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["packages/core", "apps/api", "apps/worker"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "pytest-mock>=3.14",
+    "hypothesis>=6.120",
+    "mutmut>=3.0",
+    "httpx>=0.28",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "packages/core/tests",
+    "apps/api/tests",
+    "apps/worker/tests",
+    "deploy/tests",
+]
+pythonpath = [
+    "packages/core/src",
+    "apps/api/src",
+    "apps/worker/src",
+    ".",
+]
+asyncio_mode = "auto"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["mac_mini_core", "mac_mini_api", "mac_mini_worker"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+skip_covered = false
+
+[tool.mutmut]
+paths_to_mutate = ["packages/core/src/mac_mini_core/"]
+also_copy = ["packages/core/tests"]
+pytest_add_cli_args_test_selection = ["packages/core/tests/"]
+debug = false

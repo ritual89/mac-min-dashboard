@@ -1,0 +1,1 @@
+{"ID":"abc123","Names":"/nginx","Image":"nginx:latest","State":"running","Status":"Up 2 hours (healthy)","Labels":"com.docker.some.label=1"}
