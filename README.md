@@ -42,7 +42,7 @@ Optional: `cd apps/web && npm run dev` with API on 8081.
 3. **One command on the hub:** `./scripts/deploy-hub.sh` — syncs deps, checks SSH+Docker on each host, builds UI, installs launchd. Use `--install-docker` on macOS hosts missing Docker (Colima via Homebrew over SSH).
 4. From laptop on Tailscale: `http://<mac-mini-hostname>:8081`.
 
-Details: [`deploy/README.md`](deploy/README.md).
+Details: [`deploy/README.md`](deploy/README.md). Step-by-step runbook: [`docs/runbooks/mac-mini-hub-deploy.md`](docs/runbooks/mac-mini-hub-deploy.md).
 
 ## Progress (v0.1 scaffold)
 
@@ -140,6 +140,8 @@ cd apps/web && npm run dev
 ```
 
 ### Mac Mini hub (launchd, always-on)
+
+Runbook: [`docs/runbooks/mac-mini-hub-deploy.md`](docs/runbooks/mac-mini-hub-deploy.md).
 
 ```bash
 ./scripts/deploy-hub.sh

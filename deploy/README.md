@@ -1,5 +1,7 @@
 # Deploy (macOS hub)
 
+**Full procedure (deploy + test):** [docs/runbooks/mac-mini-hub-deploy.md](../docs/runbooks/mac-mini-hub-deploy.md)
+
 ## One-command hub deploy
 
 Run **on the Mac Mini** (not your dev laptop):
