@@ -11,14 +11,14 @@ from mac_mini_core.ssh.executor import RetryingExecutor, SshResult
 from mac_mini_core.ssh.subprocess import SubprocessSshExecutor, create_executor_factory
 
 
-def _host() -> HostConfig:
+def _host(*, os: HostOS = HostOS.DARWIN) -> HostConfig:
     return HostConfig(
         id="mac-mini",
         display_name="Mac Mini",
         tailscale_host="mac-mini",
         ssh_user="greg",
         ssh_key_path="~/.ssh/id_ed25519",
-        os=HostOS.DARWIN,
+        os=os,
     )
 
 
@@ -83,6 +83,29 @@ def test_subprocess_ssh_invokes_allowlisted_command(monkeypatch: pytest.MonkeyPa
     assert "greg@mac-mini" in ssh_cmd[-2]
     assert "docker ps --format" in ssh_cmd[-1]
     assert "/opt/homebrew/bin" in ssh_cmd[-1]
+
+
+# AC-2.7
+def test_subprocess_ssh_wraps_linux_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **kwargs: object) -> MagicMock:
+        captured.append(cmd)
+        result = MagicMock()
+        result.stdout = "[]"
+        result.stderr = ""
+        result.returncode = 0
+        return result
+
+    monkeypatch.setattr("mac_mini_core.ssh.subprocess.subprocess.run", fake_run)
+
+    executor = SubprocessSshExecutor(host=_host(os=HostOS.LINUX), timeout_sec=30)
+    executor.execute(CommandTemplate.DOCKER_PS)
+
+    ssh_cmd = captured[0]
+    assert "/usr/local/bin" in ssh_cmd[-1]
+    assert "/snap/bin" in ssh_cmd[-1]
+    assert "/opt/homebrew/bin" not in ssh_cmd[-1]
 
 
 def test_create_executor_factory_wraps_retrying_executor() -> None:

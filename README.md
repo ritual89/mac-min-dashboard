@@ -42,7 +42,7 @@ Optional: `cd apps/web && npm run dev` with API on 8081.
 3. **One command on the hub:** `./scripts/deploy-hub.sh` — syncs deps, checks SSH+Docker on each host, builds UI, installs launchd. Use `--install-docker` on macOS hosts missing Docker (Colima via Homebrew over SSH).
 4. From laptop on Tailscale: `http://<mac-mini-hostname>:8081`.
 
-Details: [`deploy/README.md`](deploy/README.md).
+Details: [`deploy/README.md`](deploy/README.md). Step-by-step runbook: [`docs/runbooks/mac-mini-hub-deploy.md`](docs/runbooks/mac-mini-hub-deploy.md).
 
 ## Progress (v0.1 scaffold)
 
@@ -57,6 +57,7 @@ Shipped and covered by tests (100% branch coverage on Python packages; 100% on w
 | **Web UI** | Done | Fleet table by host, severity dots, logs modal |
 | **Demo seed** | Done | `mac-mini-seed` — populate DB from Docker fixtures (no SSH) |
 | **launchd (hub)** | Done | `scripts/install-launchd.sh` — API + worker LaunchAgents |
+| **Test coverage audit** | Done | 100% Python + web gates; `deploy/preflight` tested; CI includes worker cov; SQLite stores auto-closed in tests |
 
 Not yet: Telegram alerts, audit/settings UI, restart/stop controls, Paramiko (subprocess SSH only).
 
@@ -141,6 +142,8 @@ cd apps/web && npm run dev
 
 ### Mac Mini hub (launchd, always-on)
 
+Runbook: [`docs/runbooks/mac-mini-hub-deploy.md`](docs/runbooks/mac-mini-hub-deploy.md).
+
 ```bash
 ./scripts/deploy-hub.sh
 # API http://127.0.0.1:8081 — logs ~/Library/Logs/mac-mini-dashboard/
@@ -199,14 +202,17 @@ cd apps/web && npm run test:coverage
 
 # Mutation testing (core logic; optional — not in CI yet)
 uv run mutmut run --CI
+
+Python tests use root `conftest.py` to close SQLite stores after each test (avoids ResourceWarning noise).
 ```
 
-CI (`.github/workflows/ci.yml`) runs Python and web coverage on every push/PR.
+CI (`.github/workflows/ci.yml`) runs Python (`mac_mini_core`, `mac_mini_api`, `mac_mini_worker`) and web coverage on every push/PR.
 
 ### Repository layout
 
 ```text
 packages/core/     # mac_mini_core — domain logic, store, scanners, seed, audit/poll passes
+packages/core/src/mac_mini_core/deploy/  # fleet preflight helpers (used by scripts/preflight_fleet.py)
 packages/core/fixtures/docker/  # shipped JSONL for mac-mini-seed
 apps/api/          # mac_mini_api — FastAPI (:8081), static SPA
 apps/worker/       # mac_mini_worker — scheduler + subprocess SSH
