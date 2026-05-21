@@ -90,13 +90,13 @@ def test_ac_8_4_logs_unsupported_kind(tmp_path: Path) -> None:
     store.conn.execute(
         """
         INSERT INTO workloads (id, host_id, kind, name, monitored, pinned, metadata_json)
-        VALUES ('systemd:mac-mini:nginx.service', 'mac-mini', 'systemd', 'nginx.service', 1, 0, '{}')
+        VALUES ('cron:mac-mini:abc123', 'mac-mini', 'cron', '*/5 * * * * backup.sh', 1, 0, '{}')
         """
     )
     store.conn.execute(
         """
         INSERT INTO workload_state (workload_id, last_seen, status, severity, restart_count_1h)
-        VALUES ('systemd:mac-mini:nginx.service', '2020-01-01T00:00:00+00:00', 'active', 'green', 0)
+        VALUES ('cron:mac-mini:abc123', '2020-01-01T00:00:00+00:00', 'scheduled', 'green', 0)
         """
     )
     store.conn.commit()
@@ -106,7 +106,7 @@ def test_ac_8_4_logs_unsupported_kind(tmp_path: Path) -> None:
         executor_factory=lambda _h: FakeSshExecutor(),
     )
     client = TestClient(app)
-    response = client.get("/api/workloads/systemd:mac-mini:nginx.service/logs")
+    response = client.get("/api/workloads/cron:mac-mini:abc123/logs")
     assert response.status_code == 400
 
 

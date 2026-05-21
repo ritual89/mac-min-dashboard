@@ -56,10 +56,10 @@ def test_ac_8_1_docker_logs_command() -> None:
     assert "docker logs --tail 100 nginx" in executor.history[0].rendered
 
 
-def test_ac_8_4_systemd_unsupported() -> None:
+def test_ac_8_4_cron_unsupported() -> None:
     with pytest.raises(UnsupportedWorkloadKindError):
         fetch_workload_logs(
-            _workload(kind="systemd", name="nginx.service"),
+            _workload(kind="cron", name="backup.sh"),
             _host(),
             FakeSshExecutor(),
         )
@@ -77,3 +77,45 @@ def test_ac_8_5_ssh_failure_raises() -> None:
     )
     with pytest.raises(LogFetchError, match="docker logs failed"):
         fetch_workload_logs(_workload(), _host(), executor)
+
+
+def test_systemd_logs_via_journalctl() -> None:
+    executor = FakeSshExecutor(
+        responses={
+            (CommandTemplate.JOURNALCTL_UNIT, (("n", 200), ("unit", "nginx.service"))): SshResult(
+                stdout="May 20 systemd[1]: Started nginx.\n",
+                stderr="",
+                exit_code=0,
+            ),
+        }
+    )
+    text = fetch_workload_logs(
+        _workload(kind="systemd", name="nginx.service"),
+        _host(),
+        executor,
+    )
+    assert "Started nginx" in text
+
+
+def test_launchd_logs_via_log_show() -> None:
+    log_output = (
+        "2026-05-20 com.example.myservice: started\n"
+        "2026-05-20 kernel: something else\n"
+        "2026-05-20 com.example.myservice: healthy\n"
+    )
+    executor = FakeSshExecutor(
+        responses={
+            (CommandTemplate.LOG_SHOW_LAST, (("duration", "30m"),)): SshResult(
+                stdout=log_output,
+                stderr="",
+                exit_code=0,
+            ),
+        }
+    )
+    text = fetch_workload_logs(
+        _workload(kind="launchd", name="com.example.myservice"),
+        _host(),
+        executor,
+    )
+    assert "com.example.myservice" in text
+    assert "kernel" not in text

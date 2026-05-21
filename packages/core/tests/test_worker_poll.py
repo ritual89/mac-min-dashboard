@@ -116,7 +116,7 @@ def test_ac_6_7_poll_marks_missing_container_orange(tmp_path: Path) -> None:
         status, severity, reason = store.get_state("docker:mac-mini:nginx")
         assert status == "missing"
         assert severity == "orange"
-        assert reason == "not found in docker ps"
+        assert reason == "not found in scan"
     finally:
         store.close()
 

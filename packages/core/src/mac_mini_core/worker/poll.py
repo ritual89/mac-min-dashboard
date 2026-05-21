@@ -1,17 +1,25 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from mac_mini_core.alert import should_alert
 from mac_mini_core.config import AppConfig
 from mac_mini_core.models import WorkloadKind
+from mac_mini_core.scanners.cron import CronScanner
 from mac_mini_core.scanners.docker import DockerScanner
+from mac_mini_core.scanners.launchd import LaunchdScanner
+from mac_mini_core.scanners.systemd import SystemdScanner
 from mac_mini_core.severity import SeverityInput, evaluate_severity
 from mac_mini_core.ssh.commands import CommandTemplate
 from mac_mini_core.ssh.executor import SshExecutor
 from mac_mini_core.store import WorkloadStore
 from mac_mini_core.telegram import TelegramSender
-from mac_mini_core.worker.audit import ExecutorFactory
+from mac_mini_core.worker.audit import ExecutorFactory, Scanner
+
+if TYPE_CHECKING:
+    from mac_mini_core.config import HostConfig
 
 
 def _fetch_log_tail(
@@ -39,15 +47,30 @@ def _fetch_restart_count(executor: SshExecutor, name: str) -> int:
     return 0
 
 
+def _default_scanners() -> dict[str, list[Scanner]]:
+    docker = DockerScanner()
+    return {
+        "all": [docker, CronScanner()],
+        "linux": [SystemdScanner()],
+        "darwin": [LaunchdScanner()],
+    }
+
+
 class PollPass:
     def __init__(
         self,
         scanner: DockerScanner | None = None,
         *,
+        scanners: dict[str, list[Scanner]] | None = None,
         notifier: TelegramSender | None = None,
         dashboard_url: str | None = None,
     ) -> None:
-        self._scanner = scanner or DockerScanner()
+        if scanners is not None:
+            self._scanners = scanners
+        elif scanner is not None:
+            self._scanners: dict[str, list[Scanner]] = {"all": [scanner], "linux": [], "darwin": []}
+        else:
+            self._scanners = _default_scanners()
         self._notifier = notifier
         self._dashboard_url = dashboard_url
 
@@ -61,10 +84,13 @@ class PollPass:
         updated = 0
         for host in config.hosts:
             executor = executor_factory(host)
-            snapshots = {
-                s.workload_id: s
-                for s in self._scanner.discover(host, executor)
-            }
+            host_scanners: list[Scanner] = list(self._scanners.get("all", []))
+            host_scanners.extend(self._scanners.get(host.os.value, []))
+            snapshots: dict[str, object] = {}
+            for s in host_scanners:
+                for snap in s.discover(host, executor):
+                    snapshots[snap.workload_id] = snap
+
             for workload_id in store.list_monitored_ids(host.id):
                 old_severity = store.get_state(workload_id)[1]
 

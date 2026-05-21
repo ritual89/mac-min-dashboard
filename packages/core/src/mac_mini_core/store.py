@@ -200,7 +200,7 @@ class WorkloadStore:
                     now,
                     "missing",
                     Severity.ORANGE.value,
-                    "not found in docker ps",
+                    "not found in scan",
                     workload_id,
                 ),
             )
