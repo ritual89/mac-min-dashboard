@@ -25,7 +25,7 @@ from mac_mini_core.ssh.errors import CommandValidationError, UnknownCommandError
         ),
         (CommandTemplate.LAUNCHCTL_LIST, {}, "launchctl list"),
         (CommandTemplate.LAUNCHCTL_KICKSTART, {"label": "com.example.app"}, "launchctl kickstart -k com.example.app"),
-        (CommandTemplate.LOG_SHOW_LAST, {"duration": "5m"}, "log show --last 5m --style compact"),
+        (CommandTemplate.LOG_SHOW_LAST, {"duration": "5m"}, "/usr/bin/log show --last 5m --style compact"),
         (CommandTemplate.CRONTAB_LIST, {}, "crontab -l"),
     ],
 )

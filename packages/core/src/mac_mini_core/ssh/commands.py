@@ -104,7 +104,7 @@ def render_command(template: CommandTemplate | str, **params: object) -> str:
 
     if cmd is CommandTemplate.LOG_SHOW_LAST:
         duration = _validate_duration(str(params.get("duration", "")))
-        return f"log show --last {duration} --style compact"
+        return f"/usr/bin/log show --last {duration} --style compact"
 
     if cmd is CommandTemplate.CRONTAB_LIST:
         return "crontab -l"
