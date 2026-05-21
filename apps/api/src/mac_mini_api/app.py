@@ -2,13 +2,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Response
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from mac_mini_api.deps import ExecutorFactory, get_config, get_executor_factory, get_store
 from mac_mini_api.schemas import HostOut, WorkloadDetailOut, WorkloadOut
-from mac_mini_core.config import AppConfig, HostConfig
+from mac_mini_core.config import AppConfig, HostConfig, PromoteRulesConfig
+from mac_mini_core.control import (
+    ControlCommandError,
+    UnsupportedControlError,
+    restart_workload,
+    stop_workload,
+)
 from mac_mini_core.logs import LogFetchError, UnsupportedWorkloadKindError, fetch_workload_logs
 from mac_mini_core.store import HostRow, WorkloadRow, WorkloadStore
 
@@ -126,6 +132,92 @@ def create_app(
     def list_audit(store: WorkloadStore = Depends(get_store)) -> list[WorkloadOut]:
         rows = store.list_workloads(monitored=False)
         return [_workload_out(row) for row in rows]
+
+    @app.post("/api/workloads/{workload_id}/pin")
+    def pin_workload(
+        workload_id: str,
+        store: WorkloadStore = Depends(get_store),
+    ) -> dict[str, str]:
+        if not store.pin_workload(workload_id):
+            raise HTTPException(status_code=404, detail="workload not found")
+        return {"status": "pinned"}
+
+    @app.delete("/api/workloads/{workload_id}/pin")
+    def unpin_workload(
+        workload_id: str,
+        store: WorkloadStore = Depends(get_store),
+        config: AppConfig | None = Depends(get_config),
+    ) -> dict[str, str]:
+        rules = config.promote if config else PromoteRulesConfig()
+        if not store.unpin_workload(workload_id, rules):
+            raise HTTPException(status_code=404, detail="workload not found")
+        return {"status": "unpinned"}
+
+    @app.post("/api/workloads/{workload_id}/restart")
+    def restart_workload_endpoint(
+        workload_id: str,
+        store: WorkloadStore = Depends(get_store),
+        config: AppConfig | None = Depends(get_config),
+        executor_factory: ExecutorFactory | None = Depends(get_executor_factory),
+    ) -> dict[str, str]:
+        row = store.get_workload(workload_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="workload not found")
+        if executor_factory is None:
+            msg = "executor_factory not configured"
+            raise RuntimeError(msg)
+        host_config = _resolve_host_config(config, row.host_id)
+        executor = executor_factory(host_config)
+        try:
+            restart_workload(row, executor)
+        except UnsupportedControlError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except ControlCommandError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return {"status": "restarted"}
+
+    @app.post("/api/workloads/{workload_id}/stop")
+    def stop_workload_endpoint(
+        workload_id: str,
+        confirm: bool = Query(default=False),
+        store: WorkloadStore = Depends(get_store),
+        config: AppConfig | None = Depends(get_config),
+        executor_factory: ExecutorFactory | None = Depends(get_executor_factory),
+    ) -> dict[str, str]:
+        if not confirm:
+            raise HTTPException(status_code=400, detail="confirm=1 required")
+        row = store.get_workload(workload_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="workload not found")
+        if executor_factory is None:
+            msg = "executor_factory not configured"
+            raise RuntimeError(msg)
+        host_config = _resolve_host_config(config, row.host_id)
+        executor = executor_factory(host_config)
+        try:
+            stop_workload(row, executor)
+        except UnsupportedControlError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except ControlCommandError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return {"status": "stopped"}
+
+    @app.get("/api/settings")
+    def get_settings(
+        store: WorkloadStore = Depends(get_store),
+    ) -> dict[str, bool]:
+        return store.get_settings()
+
+    @app.patch("/api/settings")
+    def patch_settings(
+        patch: dict[str, bool] = Body(...),
+        store: WorkloadStore = Depends(get_store),
+    ) -> dict[str, str]:
+        unknown = store.update_settings(patch)
+        if unknown:
+            msg = f"unknown settings: {', '.join(sorted(unknown))}"
+            raise HTTPException(status_code=400, detail=msg)
+        return {"status": "updated"}
 
     if static_dir is None or not static_dir.is_dir():
 

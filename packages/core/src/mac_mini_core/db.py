@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS alert_history (
+    workload_id TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    sent_at TEXT NOT NULL,
+    FOREIGN KEY (workload_id) REFERENCES workloads(id)
+);
 """
 
 DEFAULT_SETTINGS = {

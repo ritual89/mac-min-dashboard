@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { FleetClient } from "../src/api/client";
 import { FleetView } from "../src/components/FleetView";
 import type { Workload } from "../src/types";
 
@@ -19,14 +20,28 @@ const sample: Workload[] = [
   },
 ];
 
+function mockClient(overrides: Partial<FleetClient> = {}): FleetClient {
+  return {
+    fetchWorkloads: vi.fn().mockResolvedValue([]),
+    fetchAudit: vi.fn().mockResolvedValue([]),
+    fetchLogs: vi.fn().mockResolvedValue(""),
+    pinWorkload: vi.fn().mockResolvedValue(undefined),
+    unpinWorkload: vi.fn().mockResolvedValue(undefined),
+    restartWorkload: vi.fn().mockResolvedValue(undefined),
+    stopWorkload: vi.fn().mockResolvedValue(undefined),
+    fetchSettings: vi.fn().mockResolvedValue({ notify_orange: true, notify_red: true }),
+    patchSettings: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  };
+}
+
 describe("FleetView fetch", () => {
   it("shows error when fetch fails", async () => {
     render(
       <FleetView
-        client={{
+        client={mockClient({
           fetchWorkloads: vi.fn().mockRejectedValue(new Error("network down")),
-          fetchLogs: vi.fn(),
-        }}
+        })}
       />,
     );
     expect(await screen.findByText("network down")).toBeInTheDocument();
@@ -34,20 +49,14 @@ describe("FleetView fetch", () => {
 
   it("shows empty message when no workloads", () => {
     render(
-      <FleetView
-        client={{
-          fetchWorkloads: vi.fn().mockResolvedValue([]),
-          fetchLogs: vi.fn(),
-        }}
-        initialWorkloads={[]}
-      />,
+      <FleetView client={mockClient()} initialWorkloads={[]} />,
     );
     expect(screen.getByText("No monitored workloads.")).toBeInTheDocument();
   });
 
   it("loads workloads from API on mount", async () => {
     const fetchWorkloads = vi.fn().mockResolvedValue(sample);
-    render(<FleetView client={{ fetchWorkloads, fetchLogs: vi.fn() }} />);
+    render(<FleetView client={mockClient({ fetchWorkloads })} />);
     await waitFor(() => {
       expect(fetchWorkloads).toHaveBeenCalledWith(true);
     });

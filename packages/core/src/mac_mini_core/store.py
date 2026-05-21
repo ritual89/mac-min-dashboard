@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from mac_mini_core.config import HostConfig, PromoteRulesConfig
+from mac_mini_core.config import PromoteRulesConfig
 from mac_mini_core.db import init_schema
 from mac_mini_core.models import Severity, WorkloadSnapshot
 from mac_mini_core.promote import WorkloadPromoteInput, should_promote
@@ -182,6 +182,8 @@ class WorkloadStore:
         snapshot: WorkloadSnapshot | None,
         *,
         restart_loop_threshold: int = 5,
+        log_tail: str | None = None,
+        restart_count: int = 0,
     ) -> None:
         now = datetime.now(UTC).isoformat()
         if snapshot is None:
@@ -209,15 +211,16 @@ class WorkloadStore:
             "SELECT restart_count_1h FROM workload_state WHERE workload_id = ?",
             (workload_id,),
         ).fetchone()
-        restart_count = int(row["restart_count_1h"]) if row else 0
+        effective_restart_count = restart_count if restart_count > 0 else (int(row["restart_count_1h"]) if row else 0)
 
         result = evaluate_severity(
             SeverityInput(
                 status=snapshot.status,
                 docker_health=snapshot.docker_health,
                 expected_running=True,
-                restart_count_1h=restart_count,
+                restart_count_1h=effective_restart_count,
                 restart_loop_threshold=restart_loop_threshold,
+                log_tail=log_tail,
             )
         )
         self.conn.execute(
@@ -226,7 +229,8 @@ class WorkloadStore:
                 last_seen = ?,
                 status = ?,
                 severity = ?,
-                severity_reason = ?
+                severity_reason = ?,
+                restart_count_1h = ?
             WHERE workload_id = ?
             """,
             (
@@ -234,10 +238,86 @@ class WorkloadStore:
                 snapshot.status,
                 result.severity.value,
                 result.reason,
+                effective_restart_count,
                 workload_id,
             ),
         )
         self.conn.commit()
+
+    def pin_workload(self, workload_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT id FROM workloads WHERE id = ?", (workload_id,)
+        ).fetchone()
+        if row is None:
+            return False
+        self.conn.execute(
+            "UPDATE workloads SET pinned = 1, monitored = 1 WHERE id = ?",
+            (workload_id,),
+        )
+        self.conn.commit()
+        return True
+
+    def unpin_workload(
+        self,
+        workload_id: str,
+        rules: PromoteRulesConfig,
+    ) -> bool:
+        row = self.conn.execute(
+            "SELECT id, kind, name FROM workloads WHERE id = ?",
+            (workload_id,),
+        ).fetchone()
+        if row is None:
+            return False
+
+        promote_input = WorkloadPromoteInput(
+            kind=str(row["kind"]),
+            name=str(row["name"]),
+            project_path=None,
+            listen_port=None,
+            pinned=False,
+        )
+        monitored = should_promote(promote_input, rules)
+        self.conn.execute(
+            "UPDATE workloads SET pinned = 0, monitored = ? WHERE id = ?",
+            (1 if monitored else 0, workload_id),
+        )
+        self.conn.commit()
+        return True
+
+    _KNOWN_SETTINGS = frozenset({"notify_orange", "notify_red"})
+
+    def get_settings(self) -> dict[str, bool]:
+        rows = self.conn.execute("SELECT key, value FROM settings").fetchall()
+        return {str(row["key"]): str(row["value"]) == "true" for row in rows}
+
+    def update_settings(self, patch: dict[str, bool]) -> set[str]:
+        unknown = set(patch.keys()) - self._KNOWN_SETTINGS
+        if unknown:
+            return unknown
+        for key, value in patch.items():
+            self.conn.execute(
+                "UPDATE settings SET value = ? WHERE key = ?",
+                ("true" if value else "false", key),
+            )
+        self.conn.commit()
+        return set()
+
+    def record_alert(self, workload_id: str, severity: str) -> None:
+        now = datetime.now(UTC).isoformat()
+        self.conn.execute(
+            "INSERT INTO alert_history (workload_id, severity, sent_at) VALUES (?, ?, ?)",
+            (workload_id, severity, now),
+        )
+        self.conn.commit()
+
+    def last_alert_time(self, workload_id: str) -> datetime | None:
+        row = self.conn.execute(
+            "SELECT sent_at FROM alert_history WHERE workload_id = ? ORDER BY sent_at DESC LIMIT 1",
+            (workload_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return datetime.fromisoformat(str(row["sent_at"]))
 
     def get_state(self, workload_id: str) -> tuple[str, str, str | None]:
         row = self.conn.execute(

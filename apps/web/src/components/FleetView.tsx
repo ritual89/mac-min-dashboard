@@ -16,6 +16,8 @@ export function FleetView({ client, initialWorkloads }: FleetViewProps) {
   const [logsBody, setLogsBody] = useState("");
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmStop, setConfirmStop] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialWorkloads !== undefined) {
@@ -58,19 +60,47 @@ export function FleetView({ client, initialWorkloads }: FleetViewProps) {
     [client],
   );
 
+  const handleRestart = useCallback(
+    async (workload: Workload) => {
+      setActionError(null);
+      try {
+        await client.restartWorkload(workload.id);
+      } catch (err) {
+        setActionError(
+          err instanceof Error ? err.message : "restart failed",
+        );
+      }
+    },
+    [client],
+  );
+
+  const handleStop = useCallback(
+    async (workload: Workload) => {
+      setActionError(null);
+      try {
+        await client.stopWorkload(workload.id);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : "stop failed");
+      } finally {
+        setConfirmStop(null);
+      }
+    },
+    [client],
+  );
+
   const groups = groupByHost(workloads);
   const active = workloads.find((w) => w.id === logsOpen);
 
   return (
-    <div className="min-h-screen bg-black p-4">
-      <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold tracking-tight">Fleet</h1>
-        <span className="text-xs text-gray-500">Monitored workloads</span>
-      </header>
-
+    <div>
       {error && (
         <p className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
           {error}
+        </p>
+      )}
+      {actionError && (
+        <p className="mb-4 rounded border border-yellow-900 bg-yellow-950/40 p-3 text-sm text-yellow-300">
+          {actionError}
         </p>
       )}
 
@@ -107,13 +137,39 @@ export function FleetView({ client, initialWorkloads }: FleetViewProps) {
                     <SeverityDot severity={workload.severity} />
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <button
-                      type="button"
-                      className="rounded border border-border px-2 py-1 text-xs hover:bg-panel"
-                      onClick={() => openLogs(workload)}
-                    >
-                      Logs
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        className="rounded border border-border px-2 py-1 text-xs hover:bg-panel"
+                        onClick={() => openLogs(workload)}
+                      >
+                        Logs
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded border border-border px-2 py-1 text-xs hover:bg-panel"
+                        onClick={() => handleRestart(workload)}
+                      >
+                        Restart
+                      </button>
+                      {confirmStop === workload.id ? (
+                        <button
+                          type="button"
+                          className="rounded border border-red-700 bg-red-900/30 px-2 py-1 text-xs text-red-300 hover:bg-red-900/50"
+                          onClick={() => handleStop(workload)}
+                        >
+                          Confirm Stop
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="rounded border border-border px-2 py-1 text-xs text-gray-400 hover:bg-panel"
+                          onClick={() => setConfirmStop(workload.id)}
+                        >
+                          Stop
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -51,16 +51,22 @@ Shipped and covered by tests (100% branch coverage on Python packages; 100% on w
 | Area | Status | Notes |
 |------|--------|--------|
 | **Core** | Done | Config, SQLite store, allowlisted SSH + `FakeSshExecutor`, Docker scanner, severity, auto-promote |
-| **Worker passes** | Done | `AuditPass` (discover + upsert + promote), `PollPass` (monitored severity refresh) |
+| **Scanners** | Done | Docker, systemd, launchd, cron — OS-dispatched via `AuditPass` |
+| **Worker passes** | Done | `AuditPass` (multi-scanner discover + upsert + promote), `PollPass` (severity refresh + log tail + restart count + Telegram alerts) |
 | **Worker process** | Done | `mac-mini-worker` — poll every 30s, audit every 5m, subprocess SSH |
-| **API** | Done | Read endpoints + workload logs; serves built SPA from `apps/web/dist` |
-| **Web UI** | Done | Fleet table by host, severity dots, logs modal |
+| **Pin / Unpin API** | Done | `POST/DELETE /api/workloads/{id}/pin` — manual promote/demote |
+| **Restart / Stop API** | Done | `POST /api/workloads/{id}/restart`, `POST /api/workloads/{id}/stop?confirm=1` — kind-aware SSH dispatch |
+| **Settings API** | Done | `GET/PATCH /api/settings` — Telegram notification toggles |
+| **Telegram alerts** | Done | `TelegramNotifier` + `should_alert()` with severity transition detection, debounce, alert history |
+| **API** | Done | Read, control, settings endpoints; serves built SPA from `apps/web/dist` |
+| **Web UI** | Done | Fleet table (restart/stop/logs), Audit view (pin), All Workloads (sortable flat table), Settings (toggle switches), nav tabs, mobile cards |
 | **Demo seed** | Done | `mac-mini-seed` — populate DB from Docker fixtures (no SSH) |
 | **launchd (hub)** | Done | `scripts/install-launchd.sh` — API + worker LaunchAgents |
 | **Hub production (mac-mini)** | Done | `~/dev/mac-mini-dashboard` on hub; launchd API+worker; 3 Docker workloads monitored (2026-05-20) |
 | **Test coverage audit** | Done | 100% Python + web gates; `deploy/preflight` tested; CI includes worker cov; SQLite stores auto-closed in tests |
+| **Docs** | Done | SSH onboarding checklist (`docs/ssh-onboarding.md`), smoke test script (`scripts/smoke-test.sh`) |
 
-Not yet: Telegram alerts, audit/settings UI, restart/stop controls, Paramiko (subprocess SSH only).
+Not yet: Paramiko (subprocess SSH only), HTTP probe config UI, start workload command.
 
 ## Quick start (demo, no SSH)
 
@@ -162,10 +168,13 @@ Runbook: [`docs/runbooks/mac-mini-hub-deploy.md`](docs/runbooks/mac-mini-hub-dep
 | `DASHBOARD_PORT` | `8081` | API |
 | `DASHBOARD_STATIC_DIR` | `apps/web/dist` (if dir exists) | API |
 | `DASHBOARD_AUDIT_INTERVAL_SEC` | `300` | Worker |
+| `TELEGRAM_BOT_TOKEN` | _(empty — disabled)_ | Worker |
+| `TELEGRAM_CHAT_ID` | _(empty — disabled)_ | Worker |
+| `DASHBOARD_URL` | _(empty)_ | Worker (included in Telegram messages) |
 
 Poll interval comes from `default_poll_interval_sec` in `config.yaml` (15–60s).
 
-## API (read + logs)
+## API
 
 | Method | Path | Purpose |
 |--------|------|---------|
@@ -174,6 +183,12 @@ Poll interval comes from `default_poll_interval_sec` in `config.yaml` (15–60s)
 | GET | `/api/workloads/{id}` | Single workload |
 | GET | `/api/workloads/{id}/logs?tail=200` | Docker logs (plain text) |
 | GET | `/api/audit` | Discovered, not monitored |
+| POST | `/api/workloads/{id}/pin` | Pin (promote to monitored) |
+| DELETE | `/api/workloads/{id}/pin` | Unpin (re-evaluate auto-promote) |
+| POST | `/api/workloads/{id}/restart` | Restart workload via SSH |
+| POST | `/api/workloads/{id}/stop?confirm=1` | Stop workload (requires confirm) |
+| GET | `/api/settings` | Notification settings |
+| PATCH | `/api/settings` | Update notification settings |
 
 ## Development
 

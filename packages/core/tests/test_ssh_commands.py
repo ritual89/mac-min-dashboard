@@ -13,8 +13,11 @@ from mac_mini_core.ssh.errors import CommandValidationError, UnknownCommandError
         (CommandTemplate.DOCKER_INSPECT, {"name": "web"}, "docker inspect web"),
         (CommandTemplate.DOCKER_LOGS, {"name": "web", "n": 200}, "docker logs --tail 200 web"),
         (CommandTemplate.DOCKER_RESTART, {"name": "web"}, "docker restart web"),
+        (CommandTemplate.DOCKER_STOP, {"name": "web"}, "docker stop web"),
+        (CommandTemplate.SYSTEMCTL_LIST_UNITS, {}, "systemctl list-units --type=service --state=running --no-pager --plain"),
         (CommandTemplate.SYSTEMCTL_IS_ACTIVE, {"unit": "nginx.service"}, "systemctl is-active nginx.service"),
         (CommandTemplate.SYSTEMCTL_RESTART, {"unit": "nginx.service"}, "systemctl restart nginx.service"),
+        (CommandTemplate.SYSTEMCTL_STOP, {"unit": "nginx.service"}, "systemctl stop nginx.service"),
         (
             CommandTemplate.JOURNALCTL_UNIT,
             {"unit": "nginx.service", "n": 100},

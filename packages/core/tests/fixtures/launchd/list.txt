@@ -1,0 +1,6 @@
+PID	Status	Label
+587	0	com.gregorypeacock.dashboard-api
+612	0	com.gregorypeacock.dashboard-worker
+-	0	com.apple.Finder
+-	0	com.apple.dock.extra
+345	0	com.custom.myapp

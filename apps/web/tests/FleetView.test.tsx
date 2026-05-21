@@ -38,7 +38,14 @@ const sample: Workload[] = [
 function mockClient(overrides: Partial<FleetClient> = {}): FleetClient {
   return {
     fetchWorkloads: vi.fn().mockResolvedValue(sample),
+    fetchAudit: vi.fn().mockResolvedValue([]),
     fetchLogs: vi.fn().mockResolvedValue("log output\n"),
+    pinWorkload: vi.fn().mockResolvedValue(undefined),
+    unpinWorkload: vi.fn().mockResolvedValue(undefined),
+    restartWorkload: vi.fn().mockResolvedValue(undefined),
+    stopWorkload: vi.fn().mockResolvedValue(undefined),
+    fetchSettings: vi.fn().mockResolvedValue({ notify_orange: true, notify_red: true }),
+    patchSettings: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -122,5 +129,79 @@ describe("FleetView", () => {
     await user.click(within(section).getByRole("button", { name: "Logs" }));
 
     expect(await screen.findByText(/Error: ssh timeout/)).toBeInTheDocument();
+  });
+
+  it("restart button calls restartWorkload", async () => {
+    const restartWorkload = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderFleet(mockClient({ restartWorkload }));
+
+    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "Restart" }));
+
+    await waitFor(() => {
+      expect(restartWorkload).toHaveBeenCalledWith("docker:mac-mini:nginx");
+    });
+  });
+
+  it("stop requires confirm click", async () => {
+    const stopWorkload = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderFleet(mockClient({ stopWorkload }));
+
+    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "Stop" }));
+    expect(stopWorkload).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Confirm Stop" }));
+    await waitFor(() => {
+      expect(stopWorkload).toHaveBeenCalledWith("docker:mac-mini:nginx");
+    });
+  });
+
+  it("shows action error on restart failure", async () => {
+    const restartWorkload = vi.fn().mockRejectedValue(new Error("ssh down"));
+    const user = userEvent.setup();
+    renderFleet(mockClient({ restartWorkload }));
+
+    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "Restart" }));
+
+    expect(await screen.findByText(/ssh down/)).toBeInTheDocument();
+  });
+
+  it("shows action error on stop Error rejection", async () => {
+    const stopWorkload = vi.fn().mockRejectedValue(new Error("access denied"));
+    const user = userEvent.setup();
+    renderFleet(mockClient({ stopWorkload }));
+
+    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "Stop" }));
+    await user.click(screen.getByRole("button", { name: "Confirm Stop" }));
+
+    expect(await screen.findByText(/access denied/)).toBeInTheDocument();
+  });
+
+  it("shows action error on stop non-Error rejection", async () => {
+    const stopWorkload = vi.fn().mockRejectedValue("boom");
+    const user = userEvent.setup();
+    renderFleet(mockClient({ stopWorkload }));
+
+    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "Stop" }));
+    await user.click(screen.getByRole("button", { name: "Confirm Stop" }));
+
+    expect(await screen.findByText(/stop failed/)).toBeInTheDocument();
+  });
+
+  it("shows action error on restart non-Error rejection", async () => {
+    const restartWorkload = vi.fn().mockRejectedValue("kaboom");
+    const user = userEvent.setup();
+    renderFleet(mockClient({ restartWorkload }));
+
+    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
+    await user.click(within(section).getByRole("button", { name: "Restart" }));
+
+    expect(await screen.findByText(/restart failed/)).toBeInTheDocument();
   });
 });

@@ -94,6 +94,70 @@ def test_run_worker_skips_close_without_store(monkeypatch: pytest.MonkeyPatch) -
     assert worker_main.run_worker(max_ticks=1) == 1
 
 
+def test_build_scheduler_with_telegram(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "hosts:\n"
+        "  - id: mac-mini\n"
+        "    display_name: Mac Mini\n"
+        "    tailscale_host: mac-mini\n"
+        "    ssh_user: greg\n"
+        "    ssh_key_path: ~/.ssh/id_ed25519\n"
+        "    os: darwin\n"
+        "promote:\n"
+        "  allowlist: []\n"
+        "  port_denylist: []\n",
+    )
+    db_path = tmp_path / "fleet.db"
+    monkeypatch.setenv("DASHBOARD_CONFIG_PATH", str(config_path))
+    monkeypatch.setenv("DASHBOARD_DB_PATH", str(db_path))
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setenv("DASHBOARD_URL", "http://dash:8081")
+
+    scheduler = worker_main.build_scheduler()
+    try:
+        assert scheduler.poll_pass._notifier is not None
+        assert scheduler.poll_pass._dashboard_url == "http://dash:8081"
+    finally:
+        scheduler.store.close()
+
+
+def test_build_scheduler_without_telegram(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "hosts:\n"
+        "  - id: mac-mini\n"
+        "    display_name: Mac Mini\n"
+        "    tailscale_host: mac-mini\n"
+        "    ssh_user: greg\n"
+        "    ssh_key_path: ~/.ssh/id_ed25519\n"
+        "    os: darwin\n"
+        "promote:\n"
+        "  allowlist: []\n"
+        "  port_denylist: []\n",
+    )
+    db_path = tmp_path / "fleet.db"
+    monkeypatch.setenv("DASHBOARD_CONFIG_PATH", str(config_path))
+    monkeypatch.setenv("DASHBOARD_DB_PATH", str(db_path))
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    monkeypatch.delenv("DASHBOARD_URL", raising=False)
+
+    scheduler = worker_main.build_scheduler()
+    try:
+        assert scheduler.poll_pass._notifier is None
+        assert scheduler.poll_pass._dashboard_url is None
+    finally:
+        scheduler.store.close()
+
+
 def test_run_worker_closes_database(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

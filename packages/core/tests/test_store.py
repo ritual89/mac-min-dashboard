@@ -42,6 +42,47 @@ def test_get_host_returns_none_when_missing(tmp_path: Path) -> None:
         store.close()
 
 
+def test_get_settings_defaults(tmp_path: Path) -> None:
+    store = WorkloadStore.open(str(tmp_path / "fleet.db"))
+    try:
+        settings = store.get_settings()
+        assert settings == {"notify_orange": True, "notify_red": True}
+    finally:
+        store.close()
+
+
+def test_update_settings_changes_value(tmp_path: Path) -> None:
+    store = WorkloadStore.open(str(tmp_path / "fleet.db"))
+    try:
+        unknown = store.update_settings({"notify_orange": False})
+        assert unknown == set()
+        settings = store.get_settings()
+        assert settings["notify_orange"] is False
+        assert settings["notify_red"] is True
+    finally:
+        store.close()
+
+
+def test_update_settings_rejects_unknown(tmp_path: Path) -> None:
+    store = WorkloadStore.open(str(tmp_path / "fleet.db"))
+    try:
+        unknown = store.update_settings({"bad_key": True})
+        assert "bad_key" in unknown
+    finally:
+        store.close()
+
+
+def test_record_and_get_last_alert_time(tmp_path: Path) -> None:
+    store = WorkloadStore.open(str(tmp_path / "fleet.db"))
+    try:
+        assert store.last_alert_time("docker:h1:a") is None
+        store.record_alert("docker:h1:a", "orange")
+        ts = store.last_alert_time("docker:h1:a")
+        assert ts is not None
+    finally:
+        store.close()
+
+
 def test_ensure_host_updates_row(tmp_path: Path) -> None:
     store = WorkloadStore.open(str(tmp_path / "fleet.db"))
     try:

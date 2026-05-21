@@ -16,7 +16,10 @@ Each spec defines **functional requirements (FR-*)** and **acceptance criteria (
 | [11-worker-entrypoint.md](11-worker-entrypoint.md) | Approved | `apps/worker/tests/` |
 | [12-demo-seed.md](12-demo-seed.md) | Approved | `test_seed.py` |
 | [13-launchd-deploy.md](13-launchd-deploy.md) | Approved | `deploy/tests/test_launchd_plists.py` |
+| [14-api-pin.md](14-api-pin.md) | Approved | `test_pin.py`, `apps/api/tests/test_api_pin.py` |
+| [15-api-restart-stop.md](15-api-restart-stop.md) | Approved | `test_control.py`, `apps/api/tests/test_api_control.py` |
+| [16-settings-api.md](16-settings-api.md) | Approved | `test_store.py`, `apps/api/tests/test_api_settings.py` |
 
 **Iron law:** no production code without a failing test derived from an AC.
 
-Pending specs (next TDD cycles): `09-telegram`, API restart/stop, audit/settings UI.
+All v1 specs implemented. Post-v1: HTTP probe config, start workload, Paramiko transport.

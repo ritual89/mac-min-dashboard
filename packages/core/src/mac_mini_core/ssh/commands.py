@@ -15,8 +15,11 @@ class CommandTemplate(StrEnum):
     DOCKER_INSPECT = "docker_inspect"
     DOCKER_LOGS = "docker_logs"
     DOCKER_RESTART = "docker_restart"
+    DOCKER_STOP = "docker_stop"
+    SYSTEMCTL_LIST_UNITS = "systemctl_list_units"
     SYSTEMCTL_IS_ACTIVE = "systemctl_is_active"
     SYSTEMCTL_RESTART = "systemctl_restart"
+    SYSTEMCTL_STOP = "systemctl_stop"
     JOURNALCTL_UNIT = "journalctl_unit"
     LAUNCHCTL_LIST = "launchctl_list"
     LAUNCHCTL_KICKSTART = "launchctl_kickstart"
@@ -68,6 +71,13 @@ def render_command(template: CommandTemplate | str, **params: object) -> str:
         name = _validate_name(str(params.get("name", "")), "name")
         return f"docker restart {name}"
 
+    if cmd is CommandTemplate.DOCKER_STOP:
+        name = _validate_name(str(params.get("name", "")), "name")
+        return f"docker stop {name}"
+
+    if cmd is CommandTemplate.SYSTEMCTL_LIST_UNITS:
+        return "systemctl list-units --type=service --state=running --no-pager --plain"
+
     if cmd is CommandTemplate.SYSTEMCTL_IS_ACTIVE:
         unit = _validate_name(str(params.get("unit", "")), "unit")
         return f"systemctl is-active {unit}"
@@ -75,6 +85,10 @@ def render_command(template: CommandTemplate | str, **params: object) -> str:
     if cmd is CommandTemplate.SYSTEMCTL_RESTART:
         unit = _validate_name(str(params.get("unit", "")), "unit")
         return f"systemctl restart {unit}"
+
+    if cmd is CommandTemplate.SYSTEMCTL_STOP:
+        unit = _validate_name(str(params.get("unit", "")), "unit")
+        return f"systemctl stop {unit}"
 
     if cmd is CommandTemplate.JOURNALCTL_UNIT:
         unit = _validate_name(str(params.get("unit", "")), "unit")
