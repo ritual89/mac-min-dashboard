@@ -1,10 +1,30 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-cosmic-void: #06051d;
+  --color-abyssal: #0f1c36;
+  --color-steel-navy: #1d293d;
+  --color-deep-slate: #2a3a52;
+  --color-mist: #8899aa;
+  --color-fog: #667788;
+  --color-ash: #2e3038;
+  --color-ghost-white: #eef1f5;
+  --color-ice-blue: #c8d6e5;
+  --color-portal-blue: #3b82f6;
+  --color-specimen-green: #22c55e;
+  --color-warning-amber: #f59e0b;
+  --color-fault-red: #ef4444;
+  --color-crimson-depth: #7f1d1d;
+
+  --color-panel: #1d293d;
+  --color-row: #0f1c36;
+  --color-border: #2a3a52;
+
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace;
+}
 
 body {
   margin: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: var(--font-mono);
 }

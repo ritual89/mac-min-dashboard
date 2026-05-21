@@ -57,21 +57,18 @@ function renderFleet(client: FleetClient, workloads = sample) {
 }
 
 describe("FleetView", () => {
-  // AC-10.1
   it("renders workload name and status", () => {
     renderFleet(mockClient());
     expect(screen.getByText("nginx")).toBeInTheDocument();
     expect(screen.getAllByText("running").length).toBeGreaterThan(0);
   });
 
-  // AC-10.2
   it("renders two host sections", () => {
     renderFleet(mockClient());
     expect(screen.getByRole("heading", { name: "mac-mini" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "vultr-1" })).toBeInTheDocument();
   });
 
-  // AC-10.3
   it("marks red severity on row", () => {
     renderFleet(mockClient());
     const section = screen.getByRole("heading", { name: "vultr-1" }).closest("section")!;
@@ -79,14 +76,12 @@ describe("FleetView", () => {
     expect(tr).toHaveAttribute("data-severity", "red");
   });
 
-  // AC-10.4 & AC-10.5
-  it("opens logs modal with fetched text", async () => {
+  it("expands row on click and shows fetched logs", async () => {
     const fetchLogs = vi.fn().mockResolvedValue("hello from container\n");
     const user = userEvent.setup();
     renderFleet(mockClient({ fetchLogs }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Logs" }));
+    await user.click(screen.getByText("nginx"));
 
     await waitFor(() => {
       expect(fetchLogs).toHaveBeenCalledWith("docker:mac-mini:nginx");
@@ -94,8 +89,48 @@ describe("FleetView", () => {
     expect(
       await screen.findByText("hello from container", { exact: false }),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Close" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("collapses expanded row on second click", async () => {
+    const fetchLogs = vi.fn().mockResolvedValue("logs here");
+    const user = userEvent.setup();
+    renderFleet(mockClient({ fetchLogs }));
+
+    await user.click(screen.getByText("nginx"));
+    await screen.findByText("logs here");
+
+    await user.click(screen.getByText("nginx"));
+    expect(screen.queryByText("logs here")).not.toBeInTheDocument();
+  });
+
+  it("shows severity_reason when present", async () => {
+    const user = userEvent.setup();
+    renderFleet(mockClient());
+
+    await user.click(screen.getByText("api"));
+    expect(await screen.findByText("unhealthy")).toBeInTheDocument();
+  });
+
+  it("shows last_seen in expanded row", async () => {
+    const user = userEvent.setup();
+    renderFleet(mockClient());
+
+    await user.click(screen.getByText("nginx"));
+    expect(await screen.findByText("2026-01-01T00:00:00+00:00")).toBeInTheDocument();
+  });
+
+  it("shows metadata when present", async () => {
+    const withMeta: Workload[] = [
+      {
+        ...sample[0],
+        metadata: { image: "nginx:latest" },
+      },
+    ];
+    const user = userEvent.setup();
+    renderFleet(mockClient(), withMeta);
+
+    await user.click(screen.getByText("nginx"));
+    expect(await screen.findByText(/nginx:latest/)).toBeInTheDocument();
   });
 
   it("shows orange severity dot", () => {
@@ -114,8 +149,7 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ fetchLogs }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Logs" }));
+    await user.click(screen.getByText("nginx"));
 
     expect(await screen.findByText(/Error: fetch failed/)).toBeInTheDocument();
   });
@@ -125,10 +159,18 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ fetchLogs }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Logs" }));
+    await user.click(screen.getByText("nginx"));
 
     expect(await screen.findByText(/Error: ssh timeout/)).toBeInTheDocument();
+  });
+
+  it("shows empty logs placeholder", async () => {
+    const fetchLogs = vi.fn().mockResolvedValue("");
+    const user = userEvent.setup();
+    renderFleet(mockClient({ fetchLogs }));
+
+    await user.click(screen.getByText("nginx"));
+    expect(await screen.findByText("(empty)")).toBeInTheDocument();
   });
 
   it("restart button calls restartWorkload", async () => {
@@ -136,8 +178,9 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ restartWorkload }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Restart" }));
+    await user.click(screen.getByText("nginx"));
+    await screen.findByRole("button", { name: "Restart" });
+    await user.click(screen.getByRole("button", { name: "Restart" }));
 
     await waitFor(() => {
       expect(restartWorkload).toHaveBeenCalledWith("docker:mac-mini:nginx");
@@ -149,8 +192,9 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ stopWorkload }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Stop" }));
+    await user.click(screen.getByText("nginx"));
+    await screen.findByRole("button", { name: "Stop" });
+    await user.click(screen.getByRole("button", { name: "Stop" }));
     expect(stopWorkload).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Confirm Stop" }));
@@ -164,8 +208,9 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ restartWorkload }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Restart" }));
+    await user.click(screen.getByText("nginx"));
+    await screen.findByRole("button", { name: "Restart" });
+    await user.click(screen.getByRole("button", { name: "Restart" }));
 
     expect(await screen.findByText(/ssh down/)).toBeInTheDocument();
   });
@@ -175,8 +220,9 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ stopWorkload }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Stop" }));
+    await user.click(screen.getByText("nginx"));
+    await screen.findByRole("button", { name: "Stop" });
+    await user.click(screen.getByRole("button", { name: "Stop" }));
     await user.click(screen.getByRole("button", { name: "Confirm Stop" }));
 
     expect(await screen.findByText(/access denied/)).toBeInTheDocument();
@@ -187,8 +233,9 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ stopWorkload }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Stop" }));
+    await user.click(screen.getByText("nginx"));
+    await screen.findByRole("button", { name: "Stop" });
+    await user.click(screen.getByRole("button", { name: "Stop" }));
     await user.click(screen.getByRole("button", { name: "Confirm Stop" }));
 
     expect(await screen.findByText(/stop failed/)).toBeInTheDocument();
@@ -199,8 +246,9 @@ describe("FleetView", () => {
     const user = userEvent.setup();
     renderFleet(mockClient({ restartWorkload }));
 
-    const section = screen.getByRole("heading", { name: "mac-mini" }).closest("section")!;
-    await user.click(within(section).getByRole("button", { name: "Restart" }));
+    await user.click(screen.getByText("nginx"));
+    await screen.findByRole("button", { name: "Restart" });
+    await user.click(screen.getByRole("button", { name: "Restart" }));
 
     expect(await screen.findByText(/restart failed/)).toBeInTheDocument();
   });

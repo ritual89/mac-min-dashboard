@@ -63,20 +63,20 @@ export function AllWorkloadsView({
   return (
     <div>
       {error && (
-        <p className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+        <p className="mb-4 rounded-lg border border-fault-red/40 bg-crimson-depth/40 p-3 text-sm text-fault-red">
           {error}
         </p>
       )}
 
       {workloads.length === 0 && !error && (
-        <p className="text-sm text-gray-500">No workloads discovered yet.</p>
+        <p className="text-sm text-mist">No workloads discovered yet.</p>
       )}
 
       {sorted.length > 0 && (
         <>
           <table className="hidden w-full border-collapse text-sm sm:table">
             <thead>
-              <tr className="border-b border-border text-left text-xs text-gray-500">
+              <tr className="border-b border-border text-left text-xs text-fog">
                 <SortHeader
                   label="Host"
                   sortKey="host_id"
@@ -118,13 +118,15 @@ export function AllWorkloadsView({
               {sorted.map((w) => (
                 <tr
                   key={w.id}
-                  className="border-b border-border/60 bg-row hover:bg-[#2a2a32]"
+                  className="border-b border-border/60 bg-row transition-colors hover:bg-deep-slate"
                 >
-                  <td className="px-3 py-2 text-gray-400">{w.host_id}</td>
-                  <td className="px-3 py-2 font-medium">{w.name}</td>
-                  <td className="px-3 py-2 text-gray-400">{w.kind}</td>
-                  <td className="px-3 py-2 text-gray-300">{w.status}</td>
-                  <td className="px-3 py-2 text-gray-300">{w.severity}</td>
+                  <td className="px-3 py-2 text-mist">{w.host_id}</td>
+                  <td className="px-3 py-2 font-medium text-ghost-white">
+                    {w.name}
+                  </td>
+                  <td className="px-3 py-2 text-mist">{w.kind}</td>
+                  <td className="px-3 py-2 text-ice-blue">{w.status}</td>
+                  <td className="px-3 py-2 text-ice-blue">{w.severity}</td>
                 </tr>
               ))}
             </tbody>
@@ -134,13 +136,13 @@ export function AllWorkloadsView({
             {sorted.map((w) => (
               <div
                 key={w.id}
-                className="rounded border border-border bg-row p-3"
+                className="rounded-lg border border-border bg-row p-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{w.name}</span>
-                  <span className="text-xs text-gray-400">{w.severity}</span>
+                  <span className="font-medium text-ghost-white">{w.name}</span>
+                  <span className="text-xs text-mist">{w.severity}</span>
                 </div>
-                <div className="mt-1 text-xs text-gray-400">
+                <div className="mt-1 text-xs text-fog">
                   {w.host_id} &middot; {w.kind} &middot; {w.status}
                 </div>
               </div>
@@ -170,7 +172,7 @@ function SortHeader({
     <th className="px-3 py-2 font-medium">
       <button
         type="button"
-        className="hover:text-gray-300"
+        className="text-fog transition-colors hover:text-ice-blue"
         onClick={() => onClick(sortKey)}
       >
         {label}

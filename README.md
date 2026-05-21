@@ -59,7 +59,7 @@ Shipped and covered by tests (100% branch coverage on Python packages; 100% on w
 | **Settings API** | Done | `GET/PATCH /api/settings` — Telegram notification toggles |
 | **Telegram alerts** | Done | `TelegramNotifier` + `should_alert()` with severity transition detection, debounce, alert history |
 | **API** | Done | Read, control, settings endpoints; serves built SPA from `apps/web/dist` |
-| **Web UI** | Done | Fleet table (restart/stop/logs), Audit view (pin), All Workloads (sortable flat table), Settings (toggle switches), nav tabs, mobile cards |
+| **Web UI** | Done | Fleet table (expandable rows with inline logs, restart/stop), Audit view (pin), All Workloads (sortable flat table), Settings (toggle switches), nav tabs, mobile cards — Midjourney "bioluminescent terminal" theme, Tailwind v4, JetBrains Mono |
 | **Demo seed** | Done | `mac-mini-seed` — populate DB from Docker fixtures (no SSH) |
 | **launchd (hub)** | Done | `scripts/install-launchd.sh` — API + worker LaunchAgents |
 | **Hub production (mac-mini)** | Done | `~/dev/mac-mini-dashboard` on hub; launchd API+worker; 3 Docker workloads monitored (2026-05-20) |

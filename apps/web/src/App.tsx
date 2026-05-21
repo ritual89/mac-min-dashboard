@@ -13,9 +13,16 @@ export function App() {
   const [view, setView] = useState<View>("fleet");
 
   return (
-    <div className="min-h-screen bg-black p-4">
+    <div
+      className="min-h-screen p-4"
+      style={{
+        background: "linear-gradient(0deg, #06051d 30%, #061434)",
+      }}
+    >
       <header className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold tracking-tight">Fleet</h1>
+        <h1 className="text-[30px] font-semibold leading-tight tracking-tight text-ghost-white">
+          Fleet
+        </h1>
         <nav className="flex gap-1" role="tablist">
           <NavTab
             label="Fleet"
@@ -62,10 +69,10 @@ function NavTab({
       type="button"
       role="tab"
       aria-selected={active}
-      className={`rounded px-3 py-1.5 text-xs font-medium ${
+      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
         active
-          ? "bg-panel text-white"
-          : "text-gray-400 hover:bg-panel/50 hover:text-gray-200"
+          ? "bg-steel-navy text-portal-blue"
+          : "text-mist hover:bg-steel-navy/50 hover:text-ice-blue"
       }`}
       onClick={onClick}
     >

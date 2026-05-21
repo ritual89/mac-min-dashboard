@@ -41,13 +41,13 @@ export function SettingsView({ client, initialSettings }: SettingsViewProps) {
   }, [client, initialSettings]);
 
   if (!settings && !error) {
-    return <p className="text-sm text-gray-500">Loading settings…</p>;
+    return <p className="text-sm text-mist">Loading settings…</p>;
   }
 
   return (
     <div>
       {error && (
-        <p className="mb-4 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+        <p className="mb-4 rounded-lg border border-fault-red/40 bg-crimson-depth/40 p-3 text-sm text-fault-red">
           {error}
         </p>
       )}
@@ -96,7 +96,7 @@ function SettingsToggles({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-medium text-gray-300">
+      <h2 className="text-sm font-medium text-ice-blue">
         Telegram Notifications
       </h2>
       <ToggleRow
@@ -127,15 +127,15 @@ function ToggleRow({
   onToggle: () => void;
 }) {
   return (
-    <label className="flex items-center justify-between rounded border border-border bg-row px-4 py-3">
-      <span className="text-sm text-gray-200">{label}</span>
+    <label className="flex items-center justify-between rounded-lg border border-border bg-row px-4 py-3">
+      <span className="text-sm text-ice-blue">{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         disabled={disabled}
         className={`relative h-6 w-11 rounded-full transition-colors ${
-          checked ? "bg-emerald-600" : "bg-gray-600"
+          checked ? "bg-specimen-green" : "bg-deep-slate"
         } ${disabled ? "opacity-50" : ""}`}
         onClick={onToggle}
       >
